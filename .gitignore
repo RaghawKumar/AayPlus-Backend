@@ -3,3 +3,11 @@ data/
 .env
 coverage/
 *.log
+
+# Local environment variants and credentials
+.env.*
+!.env.example
+.DS_Store
+*.pem
+*.key
+*.p12

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
@@ -92,7 +92,7 @@ test('HTTP: authentication endpoints are rate limited', async t => {
   assert.ok(Number(limited.headers.get('retry-after')) > 0);
 });
 
-test('Cross-client: admin adapter verifies app account, observes bookings and resolves shared dispute', async t => {
+test('Cross-client: admin adapter verifies app account, observes bookings and resolves shared dispute', { skip: !existsSync(new URL('../../AayPlus-Admin/app/lib/api.js', import.meta.url)) ? 'Optional sibling admin checkout is not present' : false }, async t => {
   const { request: appRequest, login, service, base } = await fixture(t);
   const host = await login('+919876543210', 'Host');
   const renter = await login('+919876543211', 'Renter');

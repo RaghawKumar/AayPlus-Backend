@@ -156,7 +156,7 @@ A damage claim cannot exceed the deposit. A settlement cannot exceed the claim. 
 
 ## Connected clients
 
-Both clients now use this API by default. See [the shared setup guide](../INTEGRATION.md) for the complete startup and verification flow.
+Both clients now use this API by default. See [the shared setup guide](docs/INTEGRATION.md) for the complete startup and verification flow.
 
 - Flutter signs in through OTP, loads listings/bookings/account data, creates quotes and requests, manages host approvals/inspections/claims, and reads admin decisions from the shared backend.
 - Next.js admin signs in with an administrator account and loads real database collections. Verification, listing archival and dispute resolution are API writes.
@@ -181,3 +181,7 @@ This is a runnable backend foundation, not a configured payment or identity serv
 For inspection photos, use `POST /uploads?booking_id=BOOKING_ID`; for videos use `POST /uploads/videos?booking_id=BOOKING_ID`. Both accept raw `application/octet-stream` with bearer authentication. Only the verified booking host may upload for an approved/active handover. Responses return a `/api/v1/evidence/...` URL; render it against the API origin with the authenticated account's bearer header. These assets are not accessible via public `/media` routes. Old external HTTPS photo references remain readable for existing inspections.
 
 Submit handovers as `{ "notes": "Condition checked", "photos": ["/api/v1/evidence/PHOTO.jpg"], "videos": ["/api/v1/evidence/VIDEO.mp4"] }`. Either array may be empty, but at least one piece of evidence is required. Videos are limited to two per inspection and validated for a video stream, container, supported encoding and duration using bundled FFprobe. SQL initialization adds the new inspection-video and upload-booking columns without discarding existing records. Back up SQLite and the upload directory together.
+
+## Repository layout
+
+This backend is its own Git repository. See [REPOSITORIES.md](docs/REPOSITORIES.md) for the workspace arrangement and [APP-FLOW.md](docs/APP-FLOW.md) for the full product flow.
