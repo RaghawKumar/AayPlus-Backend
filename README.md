@@ -4,6 +4,10 @@ Node.js, Express 5 and SQLite (`better-sqlite3`). The API stores users, sessions
 
 Requires Node.js 20.19+ and npm. No Python runtime is used.
 
+## Supabase and free hosting
+
+See [Supabase setup and Render Free deployment](docs/SUPABASE.md) for PostgreSQL, persistent media, migration commands and optional SQLite import. Local SQLite remains available when Supabase is not configured.
+
 ## Run locally
 
 ```sh
@@ -173,7 +177,7 @@ This is a runnable backend foundation, not a configured payment or identity serv
 - Listing photos can be uploaded from the app camera or library. `POST /uploads` accepts authenticated raw image bytes (up to 8 MB), decodes and normalizes them to JPEG, strips metadata and resizes to a maximum of 1600 × 1600. It returns a relative `/media/<id>.jpg` reference. New listings may only attach uploaded references owned by their account; external HTTPS references remain supported. Files persist in `UPLOAD_DIRECTORY` (default `data/uploads`), which must be backed up with SQLite. Listing images are public. There is a 100-image/account/day upload limit. Object storage and orphan-file cleanup are not implemented.
 - Agreement signing records account acknowledgements; it is not a legal e-signature integration. Cancellation has no monetary policy yet because there are no real payments.
 - Request limits are per-process and keyed by socket IP. Configure a trusted reverse proxy deliberately; use a shared rate-limit store for multiple instances. TLS should terminate at the reverse proxy. The Express development server is not an internet-facing deployment configuration.
-- Keep SQLite on one persistent host with backups. Use versioned migrations and a shared database before scaling across multiple API instances. Schema version 1 is initialized automatically; there is no upgrade migration runner yet.
+- For the local SQLite mode, keep SQLite on one persistent host with backups. Use versioned migrations and a shared database before scaling across multiple API instances. Schema version 1 is initialized automatically; there is no upgrade migration runner yet.
 - Add request expiration, notifications, refresh sessions, provider integrations and payment integrations before production use.
 
 ### Private inspection media
