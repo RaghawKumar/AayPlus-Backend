@@ -17,7 +17,7 @@ SUPABASE_URL=https://PROJECT_REF.supabase.co
 SUPABASE_SECRET_KEY=YOUR_SERVER_ONLY_SECRET_KEY
 SUPABASE_LISTING_BUCKET=listing-images
 SUPABASE_EVIDENCE_BUCKET=inspection-evidence
-CORS_ORIGINS=https://YOUR-ACTUAL-ADMIN.netlify.app
+CORS_ORIGINS=http://localhost:3000,https://YOUR-ACTUAL-ADMIN.netlify.app
 ```
 
 Copy the **Session pooler** URI from Supabase → Connect. Replace the password
@@ -32,6 +32,12 @@ Never send the secret key or database URI to Flutter, browser code, or a
 `NEXT_PUBLIC_` variable. DATABASE_PATH/UPLOAD_DIRECTORY remain local SQLite fallback
 and import-source settings only. Partial Supabase configuration fails at startup
 rather than silently saving production data on an ephemeral filesystem.
+
+For the Render deployment, `CORS_ORIGINS` must contain the exact origin of each
+admin client (scheme and host, without a path). For local admin development use
+`http://localhost:3000`; add the deployed admin origin as another comma-separated
+value. Update the environment variable in Render and redeploy/restart the service
+after changing it.
 
 ## 2. Initialize once from your computer
 

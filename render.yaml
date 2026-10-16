@@ -21,7 +21,7 @@ services:
       - key: SUPABASE_SECRET_KEY
         sync: false
       - key: CORS_ORIGINS
-        sync: false
+        value: http://localhost:3000,http://localhost:7357
       - key: SUPABASE_LISTING_BUCKET
         value: listing-images
       - key: SUPABASE_EVIDENCE_BUCKET
