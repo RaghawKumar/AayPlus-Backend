@@ -59,3 +59,11 @@ test('Static OTP requires explicit mode and a six-digit code', async () => {
   assert.throws(() => configuredAuth({ AUTH_OTP_MODE: 'static', STATIC_OTP_CODE: '123' }), /six-digit/);
   assert.throws(() => configuredAuth({ AUTH_OTP_MODE: 'typo' }), /AUTH_OTP_MODE/);
 });
+
+test('Manual KYC configuration is explicit and rejects unknown modes', async () => {
+  const { configuredKyc } = await import('../src/config.js');
+  assert.deepEqual(configuredKyc({}), { manualKyc: false });
+  assert.deepEqual(configuredKyc({ KYC_REVIEW_MODE: 'manual' }), { manualKyc: true });
+  assert.deepEqual(configuredKyc({ KYC_REVIEW_MODE: 'disabled' }), { manualKyc: false });
+  assert.throws(() => configuredKyc({ KYC_REVIEW_MODE: 'typo' }), /KYC_REVIEW_MODE/);
+});

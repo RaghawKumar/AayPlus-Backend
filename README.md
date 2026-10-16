@@ -107,7 +107,7 @@ Send `Content-Type: application/json` and a JSON object for POST/PATCH, includin
 | GET | `/admin/disputes` | Admin; all disputes |
 | GET | `/admin/ledger` | Admin; accounting intentions |
 | GET | `/admin/audit` | Admin; recorded operational actions |
-| POST | `/admin/users/:id/kyc` | Admin; development-only `{status: "verified" or "rejected"}` |
+| POST | `/admin/users/:id/kyc` | Admin; manual review (`KYC_REVIEW_MODE=manual`) or development `{status: "verified" or "rejected"}` |
 | POST | `/admin/disputes/:id/resolve` | Admin; `{settlement_paise, notes}` |
 
 Create a listing:
@@ -172,7 +172,7 @@ Both clients now use this API by default. See [the shared setup guide](docs/INTE
 
 This is a runnable backend foundation, not a configured payment or identity service.
 
-- `APP_ENV=development` returns generated OTP codes in the response and permits admin verification for testing. It must not be exposed publicly. Outside development, OTP delivery and KYC review return HTTP 503 until real providers are integrated.
+- `APP_ENV=development` returns generated OTP codes in the response and permits admin verification for testing. It must not be exposed publicly. Outside development, OTP delivery returns HTTP 503 unless temporary static OTP mode is explicitly enabled. Admin member verification is available with `KYC_REVIEW_MODE=manual`; it records a manual decision rather than an external identity check. Without that setting, KYC review returns HTTP 503.
 - No payment is captured. Ledger rows named `rental_due`, `damage_due` and `deposit_release_due` describe accounting intentions, **not completed payouts or refunds**. No escrow balance is claimed. A real gateway integration must add verified webhooks, idempotent captures/refunds and payment-state checks before rental fulfillment.
 - Listing photos can be uploaded from the app camera or library. `POST /uploads` accepts authenticated raw image bytes (up to 8 MB), decodes and normalizes them to JPEG, strips metadata and resizes to a maximum of 1600 × 1600. It returns a relative `/media/<id>.jpg` reference. New listings may only attach uploaded references owned by their account; external HTTPS references remain supported. Files persist in `UPLOAD_DIRECTORY` (default `data/uploads`), which must be backed up with SQLite. Listing images are public. There is a 100-image/account/day upload limit. Object storage and orphan-file cleanup are not implemented.
 - Agreement signing records account acknowledgements; it is not a legal e-signature integration. Cancellation has no monetary policy yet because there are no real payments.

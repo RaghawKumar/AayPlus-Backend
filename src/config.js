@@ -10,12 +10,18 @@ export function configuredAuth(env = process.env) {
   return { development: env.APP_ENV === 'development', staticOtpCode: mode === 'static' ? env.STATIC_OTP_CODE : null };
 }
 
+export function configuredKyc(env = process.env) {
+  const mode = env.KYC_REVIEW_MODE || 'disabled';
+  if (!['disabled', 'manual'].includes(mode)) throw new Error('KYC_REVIEW_MODE must be disabled or manual');
+  return { manualKyc: mode === 'manual' };
+}
+
 export async function configuredService(env = process.env) {
   if (env.SUPABASE_URL && !env.DATABASE_URL) throw new Error('Set DATABASE_URL to the Supabase Session pooler PostgreSQL URI; API keys alone do not connect the database');
   if (env.DATABASE_URL && !/^postgres(?:ql)?:\/\//.test(env.DATABASE_URL)) throw new Error('DATABASE_URL must be a PostgreSQL connection URI');
   const location = env.DATABASE_URL || resolve(env.DATABASE_PATH || './data/aayplus.sqlite3');
   if (!env.DATABASE_URL) mkdirSync(dirname(location), { recursive: true });
-  const service = new Marketplace(location, configuredAuth(env));
+  const service = new Marketplace(location, { ...configuredAuth(env), ...configuredKyc(env) });
   try { return await service.initialize(); }
   catch (error) { await service.close(); throw error; }
 }

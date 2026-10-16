@@ -85,8 +85,9 @@ npm start
 ```
 
 Open `/health`, then `/api/v1/listings`. In production, OTP requests still return
-503 until a real SMS provider is integrated; KYC and payments also remain provider
-boundaries. Do not set APP_ENV=development on a public service to bypass this.
+503 until a real SMS provider is integrated (unless explicit static test mode is
+enabled). KYC supports the manual admin review mode described below; payments
+remain a provider boundary. Do not set APP_ENV=development on a public service to bypass this.
 
 In Render create a **Free Node Web Service**, build `npm ci`, start `npm start`,
 health path `/health`. Use the backend repository root (or root directory
@@ -145,3 +146,13 @@ The admin account must still be promoted with the operator command using the sam
 Supabase DATABASE_URL (`npm run admin:promote -- promote-admin +91YOUR_NUMBER`).
 The static code does not grant administrator or KYC privileges. APP_ENV stays
 production so development response logging and simulated KYC remain disabled.
+
+## Manual member verification
+
+Set `KYC_REVIEW_MODE=manual` on Render and redeploy the updated API to let authorized
+administrators approve/reject members while keeping `APP_ENV=production`.
+This is an administrator's manual decision, not an external identity-provider
+check. Each decision records the reviewing administrator and `kyc.manual.verified`
+or `kyc.manual.rejected` in the audit trail. Members cannot grant themselves verified
+status. Set `KYC_REVIEW_MODE=disabled` to disable manual review outside development.
+No database migration or client rebuild is needed for this setting.

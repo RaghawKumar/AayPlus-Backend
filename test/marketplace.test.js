@@ -166,3 +166,21 @@ test('Static OTP retains request cooldown, failed-attempt lockout and expiry in 
   await service.db.prepare('UPDATE otps SET attempts=0,expires_at=0 WHERE phone=?').run(phone);
   await fails(() => service.verifyOtp({ phone, code: '123456', name: 'Test member' }), 401);
 });
+
+test('Manual KYC in production requires admin and records actual reviewer and decision', async () => {
+  service.development = false;
+  service.manualKyc = true;
+  await fails(() => service.reviewKyc(renter, stranger.id, { status: 'verified' }), 403);
+  await fails(() => service.reviewKyc(admin, stranger.id, { status: 'invalid' }), 400);
+  await fails(() => service.reviewKyc(admin, '000000000000000000000000', { status: 'verified' }), 404);
+  const approved = await service.reviewKyc(admin, stranger.id, { status: 'verified' });
+  assert.equal(approved.kyc_status, 'verified');
+  assert.equal(approved.role, 'member');
+  assert.equal((await service.reviewKyc(admin, stranger.id, { status: 'rejected' })).kyc_status, 'rejected');
+  const audit = (await service.collection(admin, 'audit')).items;
+  assert.equal(audit.length, 2);
+  assert.ok(audit.every(row => row.actor_id === admin.id && row.resource_id === stranger.id));
+  assert.deepEqual(audit.map(row => row.action).sort(), ['kyc.manual.rejected', 'kyc.manual.verified']);
+  service.manualKyc = false;
+  await fails(() => service.reviewKyc(admin, stranger.id, { status: 'verified' }), 503);
+});

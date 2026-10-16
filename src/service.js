@@ -35,10 +35,11 @@ function photos(value = []) {
 const categories = ['Bikes', 'Cameras', 'Electronics', 'Parking'];
 
 export class Marketplace {
-  constructor(path, { development = false, staticOtpCode = null } = {}) {
+  constructor(path, { development = false, staticOtpCode = null, manualKyc = false } = {}) {
     if (staticOtpCode !== null && !/^\d{6}$/.test(staticOtpCode)) throw new Error('STATIC_OTP_CODE must contain exactly six digits');
     this.development = development;
     this.staticOtpCode = staticOtpCode;
+    this.manualKyc = manualKyc;
     this.db = openDatabase(path);
   }
   async initialize() {await this.db.initialize();return this;}
@@ -110,11 +111,11 @@ export class Marketplace {
   async reviewKyc(actor, uid, data) {
     this.admin(actor);
     ensure(['verified', 'rejected'].includes(data.status), 'Invalid verification status');
-    ensure(this.development, 'Identity verification provider is not configured', 503);
+    ensure(this.development || this.manualKyc, 'Identity verification provider is not configured', 503);
     return await this.transaction(async () => {
       await this.row('users', uid);
       await this.db.prepare('UPDATE users SET kyc_status=? WHERE id=?').run(data.status, uid);
-      await this.audit(actor, `kyc.development.${data.status}`, uid);
+      await this.audit(actor, `kyc.${this.manualKyc ? 'manual' : 'development'}.${data.status}`, uid);
       return await this.row('users', uid);
     });
   }
