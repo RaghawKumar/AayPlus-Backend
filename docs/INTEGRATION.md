@@ -24,7 +24,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`. The default API address is `http://localhost:8080/api/v1`. To override it, copy `.env.example` to `.env.local`, change `NEXT_PUBLIC_API_BASE_URL`, and restart Next.js. For a hosted admin, use a reachable HTTPS backend address rather than localhost.
+Open `http://localhost:3000`. The default API address is `https://aayplus-backend.onrender.com/api/v1`. To override it, copy `.env.example` to `.env.local`, change `NEXT_PUBLIC_API_BASE_URL`, and restart Next.js.
 
 Request a code using your phone number and sign in. The development server displays the generated six-digit code. A newly created account initially has no admin role, so the panel rejects access. From the backend folder, promote this account:
 
@@ -42,17 +42,17 @@ flutter pub get
 flutter run
 ```
 
-The default API address is `http://10.0.2.2:8080/api/v1` on Android, and `http://localhost:8080/api/v1` on iOS/web/desktop. You can override it:
+The default API address is `https://aayplus-backend.onrender.com/api/v1` on all platforms. You can override it:
 
 ```sh
-flutter run --dart-define=API_BASE_URL=http://localhost:8080/api/v1
+flutter run --dart-define=API_BASE_URL=https://aayplus-backend.onrender.com/api/v1
 ```
 
 For Flutter web with the default CORS settings:
 
 ```sh
 flutter run -d chrome --web-hostname localhost --web-port 7357 \
-  --dart-define=API_BASE_URL=http://localhost:8080/api/v1
+  --dart-define=API_BASE_URL=https://aayplus-backend.onrender.com/api/v1
 ```
 
 For a physical device, use the development computer's LAN address, start the backend with `HOST=0.0.0.0`, and permit local-network access on the device. Android debug builds permit local HTTP; release builds should use HTTPS. iOS permits local networking, but device/network policy may require additional configuration for a numeric LAN address. Prefer an HTTPS development endpoint for device testing.

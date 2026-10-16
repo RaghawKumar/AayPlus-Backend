@@ -90,7 +90,7 @@ and ignored by Git. Let Render provide PORT. Run schema/storage setup before the
 first deploy, and rerun migrations explicitly for future schema changes.
 
 Set admin NEXT_PUBLIC_API_BASE_URL and Flutter API_BASE_URL to
-`https://YOUR-SERVICE.onrender.com/api/v1`, then rebuild each client.
+`https://aayplus-backend.onrender.com/api/v1`, then rebuild each client.
 
 Render Free can sleep, so requests after idle periods can be slow. Free Supabase
 storage/database/egress limits still apply, especially to inspection videos.
