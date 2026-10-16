@@ -50,3 +50,12 @@ test('Supabase configuration fails instead of silently using ephemeral SQLite', 
   assert.throws(() => configuredStorage({ DATABASE_URL: 'postgresql://localhost/db' }), /SUPABASE_URL/);
   assert.equal(postgresSql("SELECT '?' AS literal FROM users WHERE id=? AND name=?"), "SELECT '?' AS literal FROM users WHERE id=$1 AND name=$2");
 });
+
+test('Static OTP requires explicit mode and a six-digit code', async () => {
+  const { configuredAuth } = await import('../src/config.js');
+  assert.deepEqual(configuredAuth({ APP_ENV: 'production', STATIC_OTP_CODE: '123456' }), { development: false, staticOtpCode: null });
+  assert.deepEqual(configuredAuth({ APP_ENV: 'production', AUTH_OTP_MODE: 'static', STATIC_OTP_CODE: '123456' }), { development: false, staticOtpCode: '123456' });
+  assert.throws(() => configuredAuth({ AUTH_OTP_MODE: 'static' }), /six-digit/);
+  assert.throws(() => configuredAuth({ AUTH_OTP_MODE: 'static', STATIC_OTP_CODE: '123' }), /six-digit/);
+  assert.throws(() => configuredAuth({ AUTH_OTP_MODE: 'typo' }), /AUTH_OTP_MODE/);
+});

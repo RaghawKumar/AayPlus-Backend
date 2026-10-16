@@ -21,7 +21,13 @@ services:
       - key: SUPABASE_SECRET_KEY
         sync: false
       - key: CORS_ORIGINS
-        value: http://localhost:3000,http://localhost:7357
+        value: https://aayplus-admin.netlify.app,http://localhost:3000,http://localhost:7357
+      # Temporary shared-code login. Set STATIC_OTP_CODE in Render; disable this
+      # mode before real users join (AUTH_OTP_MODE=default).
+      - key: AUTH_OTP_MODE
+        value: static
+      - key: STATIC_OTP_CODE
+        sync: false
       - key: SUPABASE_LISTING_BUCKET
         value: listing-images
       - key: SUPABASE_EVIDENCE_BUCKET

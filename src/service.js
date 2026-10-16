@@ -35,8 +35,10 @@ function photos(value = []) {
 const categories = ['Bikes', 'Cameras', 'Electronics', 'Parking'];
 
 export class Marketplace {
-  constructor(path, { development = false } = {}) {
+  constructor(path, { development = false, staticOtpCode = null } = {}) {
+    if (staticOtpCode !== null && !/^\d{6}$/.test(staticOtpCode)) throw new Error('STATIC_OTP_CODE must contain exactly six digits');
     this.development = development;
+    this.staticOtpCode = staticOtpCode;
     this.db = openDatabase(path);
   }
   async initialize() {await this.db.initialize();return this;}
@@ -56,13 +58,14 @@ export class Marketplace {
   async requestOtp(data) {
     const phone = data.phone;
     ensure(typeof phone === 'string' && /^\+91[6-9][0-9]{9}$/.test(phone), 'Use +91 followed by a valid 10-digit mobile number');
-    ensure(this.development, 'SMS provider is not configured', 503);
-    const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    ensure(this.development || this.staticOtpCode !== null, 'SMS provider is not configured', 503);
+    const code = this.staticOtpCode ?? randomInt(0, 1_000_000).toString().padStart(6, '0');
     await this.transaction(async () => {
       const previous = await this.db.prepare('SELECT sent_at FROM otps WHERE phone=?').get(phone);
       ensure(!previous || now() - previous.sent_at >= 60, 'Wait 60 seconds before requesting another code', 429);
       await this.db.prepare('INSERT INTO otps VALUES (?,?,?,?,?) ON CONFLICT(phone) DO UPDATE SET code_hash=excluded.code_hash,expires_at=excluded.expires_at,attempts=excluded.attempts,sent_at=excluded.sent_at').run(phone, hash(phone + code), now() + 300, 0, now());
     });
+    if (this.staticOtpCode !== null) return { expiresIn: 300, delivery: 'static-test-only' };
     return { expiresIn: 300, developmentCode: code, delivery: 'development-only' };
   }
   async verifyOtp(data) {

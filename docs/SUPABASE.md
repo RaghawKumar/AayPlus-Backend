@@ -119,3 +119,29 @@ Storage responses. PostgreSQL mutations use a transaction-scoped advisory lock t
 preserve SQLite BEGIN IMMEDIATE serialization for booking/settlement checks across
 instances. This prioritizes correctness at initial scale; fine-grained locks and
 shared rate limits are needed before increasing throughput.
+
+## Temporary static OTP login
+
+For the current testing period, set these on the **Render backend service**:
+
+```dotenv
+APP_ENV=production
+AUTH_OTP_MODE=static
+STATIC_OTP_CODE=123456
+CORS_ORIGINS=https://aayplus-admin.netlify.app,http://localhost:3000,http://localhost:7357
+```
+
+Save the environment changes and redeploy the updated backend code. Local `.env`
+changes do not update Render. Request a code normally in either client, then enter
+123456 manually; no SMS is sent and the API does not return the shared code.
+Codes still require a prior request, expire after five minutes, and lock after
+five incorrect attempts. Requests retain their 60-second resend cooldown. The
+same shared code can be requested again, so it does not prove phone ownership:
+anyone knowing it can sign in as another phone number. Disable this mode before
+real users join by setting AUTH_OTP_MODE=default and removing STATIC_OTP_CODE.
+Without an SMS integration, restricted/default mode returns 503 as before.
+
+The admin account must still be promoted with the operator command using the same
+Supabase DATABASE_URL (`npm run admin:promote -- promote-admin +91YOUR_NUMBER`).
+The static code does not grant administrator or KYC privileges. APP_ENV stays
+production so development response logging and simulated KYC remain disabled.

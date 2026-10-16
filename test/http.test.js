@@ -9,10 +9,10 @@ import sharp from 'sharp';
 import { createApp } from '../src/app.js';
 import { Marketplace } from '../src/service.js';
 
-async function fixture(t, { development = true, logger = { error() {} } } = {}) {
-  const service = await testService(':memory:', { development });
+async function fixture(t, { development = true, logger = { error() {} }, staticOtpCode = null, origins } = {}) {
+  const service = await testService(':memory:', { development, staticOtpCode });
   const uploadDirectory = mkdtempSync(join(tmpdir(), 'aayplus-uploads-'));
-  const server = createApp(service, { logger, uploadDirectory }).listen(0, '127.0.0.1');
+  const server = createApp(service, { logger, uploadDirectory, origins }).listen(0, '127.0.0.1');
   await once(server, 'listening');
   t.after(async () => {server.closeAllConnections();await new Promise((resolve) => server.close(resolve));await service.close();rmSync(uploadDirectory, { recursive: true, force: true });});
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -209,4 +209,29 @@ test('Pickup and return evidence supports private photo/video uploads and reject
   const details = (await request(`/api/v1/bookings/${booking.id}`, { token: renter.token })).data.data;
   assert.deepEqual(details.inspections[0].videos, [video]);assert.deepEqual(details.inspections[0].photos, [photo]);
   assert.equal((await request(`/api/v1/bookings/${booking.id}/return`, { method: 'POST', token: host.token, body: { notes: 'Return video', photos: [], videos: [video] } })).status, 200);
+});
+
+test('Static test OTP works in restricted mode for app and admin origin without granting admin', async t => {
+  const origin = 'https://aayplus-admin.netlify.app';
+  const { request, service } = await fixture(t, { development: false, staticOtpCode: '123456', origins: [origin] });
+  const headers = { Origin: origin };
+  const preflight = await request('/api/v1/auth/otp', { method: 'OPTIONS', headers });
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get('access-control-allow-origin'), origin);
+  assert.equal((await request('/api/v1/auth/otp', { method: 'OPTIONS', headers: { Origin: 'https://untrusted.example' } })).status, 403);
+  const phone = '+919876543210';
+  const sent = await request('/api/v1/auth/otp', { method: 'POST', headers, body: { phone } });
+  assert.equal(sent.status, 200);
+  assert.equal(sent.data.data.delivery, 'static-test-only');
+  assert.equal(sent.data.data.developmentCode, undefined);
+  assert.ok(!JSON.stringify(sent.data).includes('123456'));
+  assert.equal((await request('/api/v1/auth/verify', { method: 'POST', headers, body: { phone, code: '000000', name: 'Test member' } })).status, 401);
+  const loggedIn = await request('/api/v1/auth/verify', { method: 'POST', headers, body: { phone, code: '123456', name: 'Test member' } });
+  assert.equal(loggedIn.status, 200);
+  const token = loggedIn.data.data.token;
+  assert.equal((await request('/api/v1/me', { token })).status, 200);
+  assert.equal((await request('/api/v1/admin/users', { headers, token })).status, 403);
+  await service.db.prepare("UPDATE users SET role='admin' WHERE id=?").run(loggedIn.data.data.user.id);
+  assert.equal((await request('/api/v1/admin/users', { headers, token })).status, 200);
+  assert.equal((await request('/api/v1/auth/verify', { method: 'POST', headers, body: { phone, code: '123456' } })).status, 401);
 });

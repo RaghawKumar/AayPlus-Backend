@@ -154,3 +154,15 @@ test('failed settlement rolls back every write', async () => {
   assert.equal((await service.row('bookings', booking.id)).status, 'disputed');
   assert.equal((await service.collection(admin, 'ledger')).items.length, 1);
 });
+
+test('Static OTP retains request cooldown, failed-attempt lockout and expiry in restricted mode', async () => {
+  service.development = false;
+  service.staticOtpCode = '123456';
+  const phone = '+919876543210';
+  await service.requestOtp({ phone });
+  await fails(() => service.requestOtp({ phone }), 429);
+  for (let n = 0; n < 5; n++) await fails(() => service.verifyOtp({ phone, code: '000000' }), 401);
+  await fails(() => service.verifyOtp({ phone, code: '123456', name: 'Test member' }), 401);
+  await service.db.prepare('UPDATE otps SET attempts=0,expires_at=0 WHERE phone=?').run(phone);
+  await fails(() => service.verifyOtp({ phone, code: '123456', name: 'Test member' }), 401);
+});
