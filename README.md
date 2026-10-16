@@ -84,7 +84,7 @@ Send `Content-Type: application/json` and a JSON object for POST/PATCH, includin
 | GET | `/evidence/:name` | Booking host/renter or admin; private media, supports range requests |
 | POST | `/uploads` | Verified member; raw image bytes with `Content-Type: application/octet-stream`, up to 8 MB |
 | POST | `/listings` | Verified member; create owned listing |
-| PATCH | `/listings/:id` | Owner/admin; `{active: false}` archives listing |
+| PATCH | `/listings/:id` | Owner/admin; update listing details/photos/prices, or `{active: false}` to archive |
 | POST | `/bookings/quote` | Verified renter; calculate price and check availability |
 | POST | `/bookings` | Verified renter; create a reservation request |
 | GET | `/bookings` | Account's bookings |
@@ -189,3 +189,15 @@ Submit handovers as `{ "notes": "Condition checked", "photos": ["/api/v1/evidenc
 ## Repository layout
 
 This backend is its own Git repository. See [REPOSITORIES.md](docs/REPOSITORIES.md) for the workspace arrangement and [APP-FLOW.md](docs/APP-FLOW.md) for the full product flow.
+
+## Managing a host listing
+
+The app opens a host detail screen when an item in My listings is tapped. Hosts
+can edit photos, category, description, location and prices, or archive/restore
+the item after confirmation. `PATCH /api/v1/listings/:id` accepts those editable
+fields and validates uploaded-photo ownership. Ownership cannot be transferred
+through this endpoint. Existing booking rental/deposit amounts are preserved;
+new prices apply to new bookings. Archived listings remain available in the
+host collection and existing bookings, but are hidden from public discovery.
+Deploy the updated backend before using the app's edit flow; no schema migration
+is needed for this change.

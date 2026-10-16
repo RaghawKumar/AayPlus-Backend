@@ -166,6 +166,29 @@ export class Marketplace {
       return this.listingJson(await this.row('listings', uid));
     });
   }
+  async updateListing(actor, uid, data) {
+    const allowed = ['title', 'description', 'location', 'category', 'hourly_paise', 'daily_paise', 'weekly_paise', 'deposit_paise', 'photos', 'active'];
+    const keys = Object.keys(data);
+    ensure(keys.length > 0 && keys.every(key => allowed.includes(key)), 'Invalid listing fields');
+    if (keys.length === 1 && keys[0] === 'active') return this.setListingActive(actor, uid, data);
+    return this.transaction(async () => {
+      const original = await this.row('listings', uid);
+      ensure(actor.id === original.owner_id || actor.role === 'admin', 'Only the host or administrator can change this listing', 403);
+      ensure(actor.kyc_status === 'verified' || actor.role === 'admin', 'Verified identity required to edit a listing', 403);
+      const next = { ...this.listingJson(original), ...data };
+      ensure(typeof next.active === 'boolean', 'active must be a boolean');
+      ensure(categories.includes(next.category), 'Invalid category');
+      for (const photo of photos(next.photos)) {
+        ensure(!photo.startsWith('/api/v1/evidence/'), 'Private inspection evidence cannot be used in a public listing');
+        if (photo.startsWith('/media/')) ensure(await this.db.prepare('SELECT name FROM uploads WHERE name=? AND owner_id=? AND booking_id IS NULL').get(photo.slice(7), original.owner_id), 'Photo must be uploaded by the listing owner', 403);
+      }
+      await this.db.prepare('UPDATE listings SET title=?,description=?,location=?,category=?,hourly_paise=?,daily_paise=?,weekly_paise=?,deposit_paise=?,photos=?,active=? WHERE id=?').run(
+        string(next.title, 'title', 150), string(next.description, 'description'), string(next.location, 'location', 150), next.category,
+        money(next.hourly_paise, 'hourly_paise', 1), money(next.daily_paise, 'daily_paise', 1), money(next.weekly_paise, 'weekly_paise', 1), money(next.deposit_paise, 'deposit_paise'), JSON.stringify(photos(next.photos)), Number(next.active), uid);
+      await this.audit(actor, 'listing.updated', uid);
+      return this.listingJson(await this.row('listings', uid));
+    });
+  }
   static price(listing, start, end) {
     const hours = Math.ceil((end - start) / 3600);
     const daily = Math.min(listing.daily_paise, 24 * listing.hourly_paise);

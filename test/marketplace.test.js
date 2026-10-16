@@ -184,3 +184,23 @@ test('Manual KYC in production requires admin and records actual reviewer and de
   service.manualKyc = false;
   await fails(() => service.reviewKyc(admin, stranger.id, { status: 'verified' }), 503);
 });
+
+test('Listing edits preserve booking amounts, ownership and archived state', async () => {
+  const item = await listing();
+  const booking = await service.createBooking(renter, dates(item));
+  await fails(() => service.updateListing(stranger, item.id, { title: 'Not mine' }), 403);
+  await fails(() => service.updateListing(owner, item.id, { owner_id: stranger.id }), 400);
+  await fails(() => service.updateListing(owner, item.id, { hourly_paise: 1.5 }), 400);
+  await fails(() => service.updateListing(owner, item.id, { photos: ['/api/v1/evidence/aaaaaaaaaaaaaaaaaaaaaaaa.jpg'] }), 400);
+  await service.db.prepare('INSERT INTO uploads(name,owner_id,created_at,booking_id) VALUES (?,?,?,?)').run('aaaaaaaaaaaaaaaaaaaaaaaa.jpg', renter.id, 1, null);
+  await fails(() => service.updateListing(owner, item.id, { photos: ['/media/aaaaaaaaaaaaaaaaaaaaaaaa.jpg'] }), 403);
+  await service.setListingActive(owner, item.id, { active: false });
+  const updated = await service.updateListing(owner, item.id, { title: 'Updated camera', hourly_paise: 15000, description: 'Updated description' });
+  assert.equal(updated.active, false);
+  assert.equal(updated.owner_id, owner.id);
+  assert.equal(updated.title, 'Updated camera');
+  assert.equal(updated.hourly_paise, 15000);
+  assert.equal((await service.row('bookings', booking.id)).rental_paise, booking.rental_paise);
+  assert.equal((await service.row('listings', item.id)).daily_paise, item.daily_paise);
+  assert.ok((await service.collection(admin, 'audit')).items.some(row => row.action === 'listing.updated' && row.actor_id === owner.id));
+});
